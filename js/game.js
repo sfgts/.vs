@@ -75,7 +75,7 @@
   function fmtTime(s){ s|=0; const m=(s/60)|0, r=(s%60)|0; return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`; }
 
   // ===== GLOBAL VOLUMES
-  const VOLUME = { music: 0.04, sfx: 0.06, typing: 0.08 };
+  const VOLUME = { music: 0.1, sfx: 0.06, typing: 0.08 };
 
   // ===== Systems
   function spawnEnemy(){
