@@ -3,61 +3,61 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VSurvivors‑lite — HTML5 prototype</title>
-  <style>
-    html, body { height: 100%; margin: 0; background:#0e0e12; color:#e7e7ea; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-    #wrap { display:flex; flex-direction:column; align-items:center; gap:8px; padding:12px; }
-    canvas { background:#111418; border:1px solid #1f2733; border-radius:12px; image-rendering: pixelated; }
-    .hud { width: min(960px, 98vw); display:flex; justify-content:space-between; align-items:center; gap:8px; }
-    .hud .row { display:flex; align-items:center; gap:12px; }
-    .bar { flex:1; height:12px; background:#1a2230; border-radius:8px; overflow:hidden; border:1px solid #263044; }
-    .bar>i { display:block; height:100%; background:#3aa0ff; width:0%; transition:width 120ms linear; }
-    .bar.hp>i { background:#ff4d6d; }
-    .pill { padding:4px 8px; background:#1a2230; border:1px solid #263044; border-radius:999px; font-variant-numeric: tabular-nums; }
-    .btn { padding:6px 10px; background:#1a2230; border:1px solid #2a3650; border-radius:8px; cursor:pointer; user-select:none; }
-    .btn:hover { background:#212a3a; }
-    .levelup { position:fixed; inset:0; display:none; place-items:center; backdrop-filter: blur(2px); }
-    .card { background:#121620; border:1px solid #2a3650; border-radius:16px; padding:16px; width:min(420px, 92vw); }
-    .opts { display:grid; gap:8px; margin-top:12px; }
-    .opt { padding:10px; border:1px solid #33425f; border-radius:12px; cursor:pointer; background:#161b28; }
-    .opt:hover { background:#1b2132; }
-    .muted { opacity:.8; font-size:.9em; }
-    /* XP popups overlay */
-#fx { position: fixed; inset: 0; pointer-events: none; }
-.xppop {
-  position: fixed;
-  font-weight: 700;
-  text-shadow: 0 1px 0 #0007;
-  opacity: 0;
-  transform: translate(-50%, 8px) scale(0.98);
-  transition: transform .8s ease-out, opacity .8s ease-out;
-}
-.xppop.show { opacity: 1; transform: translate(-50%, -18px) scale(1); }
-
-  </style>
+  <title>VSurvivors-lite — Digital Dreamscape</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div id="wrap">
+    <!-- FX overlay для всплывающих +XP -->
     <div id="fx"></div>
+
+    <!-- HUD -->
     <div class="hud">
       <div class="row">
         <span class="pill">Lv <span id="lvl">1</span></span>
         <div class="bar"><i id="xpbar"></i></div>
         <span class="pill" id="xptext">0 / 10 XP</span>
-
       </div>
       <div class="row">
         <div class="bar hp" style="width:180px"><i id="hpbar"></i></div>
         <span class="pill">Kills: <span id="kills">0</span></span>
         <span class="pill">Time: <span id="time">00:00</span></span>
         <span class="btn" id="pauseBtn">⏸︎ Пауза</span>
+        <span class="btn" id="musicBtn">♫ Музыка: выкл</span>
       </div>
     </div>
+
+    <!-- Игровое поле -->
     <canvas id="game" width="1240" height="920"></canvas>
+
     <p class="muted">WASD — движение · Автоатака — каждые N сек · Поднимай синие кристаллы для EXP · Избегай врагов</p>
+  </div><!-- /wrap -->
+
+  <!-- START overlay -->
+  <div class="overlay pixel" id="startOverlay">
+    <div class="card-px">
+      <h3 class="hdr-px">VSurvivors — Digital Dreamscape</h3>
+      <p class="mini-hint">WASD — движение · Авто-бой · Подбери кристаллы для EXP</p>
+      <div class="btn-px" id="startBtn">▶ СТАРТ</div>
+    </div>
   </div>
 
-  <div class="levelup" id="levelup">
+  <!-- STORY overlay -->
+  <div class="overlay pixel" id="storyOverlay" style="display:none">
+    <div class="card-px">
+      <div class="story-wrap">
+        <div class="portrait">
+          <img id="storyAvatar" src="img/portrait_default.gif" alt="avatar">
+        </div>
+        <div class="txt-px" id="storyText"></div>
+      </div>
+      <div class="btn-px" id="storyOk" style="display:none">Продолжить</div>
+      <div class="mini-hint" id="storyHint" style="display:none">Нажми, чтобы продолжить…</div>
+    </div>
+  </div>
+
+  <!-- Level Up overlay -->
+  <div class="levelup" id="levelup" style="display:none">
     <div class="card">
       <h3>Повышение уровня!</h3>
       <p class="muted">Выберите апгрейд:</p>
@@ -65,214 +65,6 @@
     </div>
   </div>
 
-  <script>
-(function(){
-  'use strict';
-  // Utils
-  var clamp=function(n,a,b){return Math.max(a,Math.min(b,n));};
-  var rand=function(a,b){return Math.random()*(b-a)+a;};
-  var dist2=function(ax,ay,bx,by){var dx=ax-bx,dy=ay-by;return dx*dx+dy*dy;};
-  var now=function(){return performance.now();};
-
-  // Canvas + UI
-  var cvs=document.getElementById('game');
-  var ctx=cvs.getContext('2d');
-  var W=cvs.width, H=cvs.height;
-  var ui={
-    lvl:document.getElementById('lvl'),
-    xp:document.getElementById('xpbar'),
-    hp:document.getElementById('hpbar'),
-    kills:document.getElementById('kills'),
-    time:document.getElementById('time'),
-    pauseBtn:document.getElementById('pauseBtn'),
-    levelup:document.getElementById('levelup'),
-    opts:document.getElementById('opts'),
-    xptext:document.getElementById('xptext'),
-    fx:document.getElementById('fx')
-};
-
-  // Input (layout-agnostic)
-  var keys=new Set();
-  addEventListener('keydown',function(e){ var k=(e.key||'').toLowerCase(); keys.add(k); keys.add(e.code); if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].indexOf(e.code)>=0) e.preventDefault(); });
-  addEventListener('keyup',function(e){ var k=(e.key||'').toLowerCase(); keys.delete(k); keys.delete(e.code); });
-
-  // Game state
-  var game={ running:true, t0:now(), seconds:0, lastSpawn:0, spawnEvery:1300, enemies:[], projs:[], gems:[], chests:[], nextChestAt:120, kills:0, difficulty:0.5 };
-  var player={ x:W/2, y:H/2, r:12, speed:190, hp:100, hpMax:100, xp:0, lvl:1, xpNext:10, cd:1.2, dmg:10, lastAtk:0, invul:0, xpBonus:0, projCount:1 };
-
-  // Time helpers
-  var last=now();
-  var secAcc=0; function tMod(dt){ secAcc+=dt; if(secAcc>=1){ secAcc-=1; return true; } return false; }
-  function fmtTime(s){ s|=0; var m=(s/60)|0; var r=(s%60)|0; return (('0'+m).slice(-2))+':'+(('0'+r).slice(-2)); }
-
-  // Systems
-  function spawnEnemy(){
-    var edge=(Math.random()*4)|0, m=30; var x=rand(0,W), y=rand(0,H);
-    if(edge===0){x=-m;y=rand(0,H);} if(edge===1){x=W+m;y=rand(0,H);} if(edge===2){y=-m;x=rand(0,W);} if(edge===3){y=H+m;x=rand(0,W);} 
-    var speed=rand(25,45)+game.difficulty*3; var hp=10+game.difficulty*3; 
-    game.enemies.push({x:x,y:y,r:10,speed:speed,hp:hp,hpMax:hp,touchDmg:8});
-  }
-  function nearestEnemy(x,y){ var best=null,bd2=1e9; for(var i=0;i<game.enemies.length;i++){ var e=game.enemies[i]; var d2=dist2(x,y,e.x,e.y); if(d2<bd2){bd2=d2; best=e;} } return best; }
-  function fireAuto(){
-    var t=now()/1000; if(t-player.lastAtk<player.cd) return; var target=nearestEnemy(player.x,player.y); if(!target) return; player.lastAtk=t;
-    var dx=target.x-player.x, dy=target.y-player.y; var base=Math.atan2(dy,dx); var n=Math.max(1,Math.floor(player.projCount)); var spread=0.17;
-    for(var i=0;i<n;i++){ var off=(i-(n-1)/2)*spread; var ang=base+off; var vx=Math.cos(ang)*260, vy=Math.sin(ang)*260; game.projs.push({x:player.x,y:player.y,r:4,vx:vx,vy:vy,life:1.8,dmg:player.dmg}); }
-  }
-  function dropGem(x,y){ game.gems.push({x:x,y:y,r:5,xp:2}); }
-  function spawnChest(){ var m=40; var x=rand(m,W-m), y=rand(m,H-m); game.chests.push({x:x,y:y}); }
-  function openChest(){
-    var rewards=[
-      {name:'Сила +3',apply:function(){player.dmg+=3;}},
-      {name:'Скорострельность +10%',apply:function(){player.cd=player.cd*0.9;}},
-      {name:'Скорость +10%',apply:function(){player.speed=player.speed*1.1;}},
-      {name:'Опыт +1 за кристалл',apply:function(){player.xpBonus+=1;}},
-      {name:'Доп. снаряд +1',apply:function(){player.projCount+=1;}},
-      {name:'Здоровье +15',apply:function(){player.hpMax+=15; player.hp=player.hpMax;}}
-    ];
-    var r=rewards[(Math.random()*rewards.length)|0];
-    ui.opts.innerHTML='';
-    var info=document.createElement('div'); info.className='opt'; info.innerHTML='<b>Сундук!</b><div class="muted">Награда: '+r.name+'</div>';
-    var ok=document.createElement('div'); ok.className='opt'; ok.innerHTML='<b>Забрать</b>';
-    ok.onclick=function(){ r.apply(); ui.levelup.style.display='none'; game.running=true; };
-    ui.opts.appendChild(info); ui.opts.appendChild(ok);
-    ui.levelup.style.display='grid'; game.running=false;
-  }
-  function levelUp(){
-    player.lvl++; player.xp=0; player.xpNext=Math.floor(player.xpNext*1.35+2);
-    var pool=[
-      {name:'Сила +3',apply:function(){player.dmg+=3;},desc:'Увеличивает урон автоатаки'},
-      {name:'Скорострельность +10%',apply:function(){player.cd=player.cd*0.9;},desc:'Снижает перезарядку'},
-      {name:'Скорость +10%',apply:function(){player.speed=player.speed*1.1;},desc:'Быстрее двигаться'},
-      {name:'Опыт +1 за кристалл',apply:function(){player.xpBonus+=1;},desc:'Больше EXP с дропа'},
-      {name:'Доп. снаряд +1',apply:function(){player.projCount+=1;},desc:'Больше выстрелов'},
-      {name:'Здоровье +15',apply:function(){player.hpMax+=15; player.hp=player.hpMax;},desc:'Полное исцеление'}
-    ];
-    // shuffle
-    for(var i=pool.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0; var tmp=pool[i]; pool[i]=pool[j]; pool[j]=tmp; }
-    var choices=pool.slice(0,3);
-    ui.opts.innerHTML='';
-    choices.forEach(function(c){ var el=document.createElement('div'); el.className='opt'; el.innerHTML='<b>'+c.name+'</b><div class="muted">'+c.desc+'</div>'; el.onclick=function(){ c.apply(); ui.levelup.style.display='none'; game.running=true; }; ui.opts.appendChild(el); });
-    ui.levelup.style.display='grid'; game.running=false;
-  }
-
-  // Loop
-  function tick(){ var t=now(); var dt=(t-last)/1000; last=t; if(game.running){ update(dt,t); render(); } requestAnimationFrame(tick); }
-
-  function update(dt,t){
-    game.seconds+=dt; if(tMod(dt)){ game.difficulty+=0.01; ui.time.textContent=fmtTime(game.seconds); }
-    // movement
-    var ax=0, ay=0; if(keys.has('w')||keys.has('arrowup')||keys.has('KeyW')) ay-=1; if(keys.has('s')||keys.has('arrowdown')||keys.has('KeyS')) ay+=1; if(keys.has('a')||keys.has('arrowleft')||keys.has('KeyA')) ax-=1; if(keys.has('d')||keys.has('arrowright')||keys.has('KeyD')) ax+=1; var len=Math.hypot(ax,ay)||1; player.x+=ax/len*player.speed*dt; player.y+=ay/len*player.speed*dt; player.x=clamp(player.x,player.r,W-player.r); player.y=clamp(player.y,player.r,H-player.r); player.invul=Math.max(0,player.invul-dt*1000);
-    // spawn enemies
-    if(t-game.lastSpawn>Math.max(250,game.spawnEvery-game.difficulty*40)){ game.lastSpawn=t; spawnEnemy(); }
-    // timed chest
-    if(game.seconds>=game.nextChestAt){ spawnChest(); game.nextChestAt+=120; }
-    // enemies pursue
-    for(var i=0;i<game.enemies.length;i++){ var e=game.enemies[i]; var dx=player.x-e.x, dy=player.y-e.y; var l=Math.hypot(dx,dy)||1; e.x+=dx/l*e.speed*dt; e.y+=dy/l*e.speed*dt; }
-    // fire
-    fireAuto();
-    // projectiles
-    for(i=0;i<game.projs.length;i++){ var p=game.projs[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; }
-    // proj vs enemy
-    for(i=0;i<game.projs.length;i++){ p=game.projs[i]; if(p.life<=0) continue; for(var j=0;j<game.enemies.length;j++){ e=game.enemies[j]; var rr=p.r+e.r; if(dist2(p.x,p.y,e.x,e.y)<=rr*rr){ e.hp-=p.dmg; p.life=0; break; } } }
-    // deaths
-    for(i=game.enemies.length-1;i>=0;i--){ e=game.enemies[i]; if(e.hp<=0){ game.enemies.splice(i,1); game.kills++; ui.kills.textContent=game.kills; dropGem(e.x,e.y); } }
-    // contact dmg
-    for(i=0;i<game.enemies.length;i++){ e=game.enemies[i]; rr=player.r+e.r; if(player.invul<=0 && dist2(player.x,player.y,e.x,e.y)<=rr*rr){ player.hp-=e.touchDmg; player.invul=550; if(player.hp<=0){ gameOver(); return; } } }
-    // gem magnet
-    for(i=0;i<game.gems.length;i++){ var g=game.gems[i]; var d2=dist2(player.x,player.y,g.x,g.y); if(d2<140*140){ var d=Math.sqrt(d2)||1; var vx=(player.x-g.x)/d*120, vy=(player.y-g.y)/d*120; g.x+=vx*dt; g.y+=vy*dt; } }
-    // gem pickup
-    for(i=game.gems.length-1;i>=0;i--){ g=game.gems[i]; rr=player.r+g.r; if(dist2(player.x,player.y,g.x,g.y)<=rr*rr){var gained = g.xp + player.xpBonus;
-    player.xp += gained; showXp('+ ' + gained + ' XP');game.gems.splice(i,1);if (player.xp >= player.xpNext) levelUp(); } }
-    
-    // chest pickup
-    for(i=game.chests.length-1;i>=0;i--){ var c=game.chests[i]; rr=player.r+10; if(dist2(player.x,player.y,c.x,c.y)<=rr*rr){ openChest(); game.chests.splice(i,1); } }
-    // cleanup
-    game.projs=game.projs.filter(function(p2){ return p2.life>0 && p2.x>-20 && p2.x<W+20 && p2.y>-20 && p2.y<H+20; });
-    // UI
-    ui.lvl.textContent=player.lvl; ui.xp.style.width=Math.min(100,(player.xp/player.xpNext)*100)+'%'; 
-    ui.hp.style.width=Math.max(0,(player.hp/player.hpMax)*100)+'%';
-    if (ui.xptext) {
-        ui.xptext.textContent = Math.floor(player.xp) + ' / ' + player.xpNext + ' XP';
-}
-
-  }
-
-  function render(){
-    ctx.clearRect(0,0,W,H);
-    // grid
-    ctx.save(); ctx.strokeStyle='#151a22'; ctx.lineWidth=1; var x; for(x=0;x<=W;x+=32){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); } for(var y=0;y<=H;y+=32){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); } ctx.restore();
-    // chests
-    for(var i=0;i<game.chests.length;i++){ var c=game.chests[i]; drawChest(c.x,c.y); }
-    // gems
-    for(i=0;i<game.gems.length;i++){ var g=game.gems[i]; drawCircle(g.x,g.y,g.r,'#49a6ff'); drawRing(g.x,g.y,g.r+2,'#2d6ea8'); }
-    // enemies
-    for(i=0;i<game.enemies.length;i++){ var e=game.enemies[i]; drawCircle(e.x,e.y,e.r,'#9b2d30'); var pct=clamp(e.hp/e.hpMax,0,1); drawArcRing(e.x,e.y,e.r+3,0,Math.PI*2*pct,'#c9484d'); }
-    // projectiles
-    for(i=0;i<game.projs.length;i++){ var p=game.projs[i]; drawCircle(p.x,p.y,p.r,'#d6e8ff'); }
-    // player
-    drawCircle(player.x,player.y,player.r,'#e2f04b'); if(player.invul>0) drawRing(player.x,player.y,player.r+4,'#e2f04b55');
-  }
-
-  function drawCircle(x,y,r,fill){ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=fill; ctx.fill(); }
-  function drawRing(x,y,r,stroke){ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.strokeStyle=stroke; ctx.lineWidth=2; ctx.stroke(); }
-  function drawArcRing(x,y,r,a0,a1,stroke){ ctx.beginPath(); ctx.arc(x,y,r,a0,a1); ctx.strokeStyle=stroke; ctx.lineWidth=3; ctx.stroke(); }
-  function drawChest(x,y){ ctx.save(); ctx.translate(x,y); ctx.fillStyle='#cfa84a'; ctx.strokeStyle='#8c6b1d'; ctx.lineWidth=2; ctx.beginPath(); ctx.rect(-10,-8,20,16); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-10,-2); ctx.lineTo(10,-2); ctx.stroke(); ctx.restore(); }
-  function showXp(txt){
-  try {
-    var anchor = ui.xptext || ui.lvl;            // где показывать всплывашку
-    var r = anchor.getBoundingClientRect();
-    var el = document.createElement('div');
-    el.className = 'xppop';
-    el.textContent = txt;
-    el.style.left = (r.left + r.width/2) + 'px';
-    el.style.top  = (r.top - 6) + 'px';
-    ui.fx.appendChild(el);
-    // анимация
-    requestAnimationFrame(function(){ el.classList.add('show'); });
-    setTimeout(function(){
-      el.style.opacity='0';
-      el.style.transform='translate(-50%,-30px) scale(0.98)';
-    }, 600);
-    setTimeout(function(){ el.remove(); }, 900);
-  } catch(e) { /* no-op */ }
-}
-
-
-  function gameOver(){ ui.levelup.style.display='grid'; ui.opts.innerHTML=''; var over=document.createElement('div'); over.className='opt'; over.innerHTML='<b>Игра окончена</b><div class="muted">Убитых: '+game.kills+' · Время: '+fmtTime(game.seconds)+'</div>'; var retry=document.createElement('div'); retry.className='opt'; retry.innerHTML='<b>Начать заново</b>'; retry.onclick=function(){ location.reload(); }; ui.opts.appendChild(over); ui.opts.appendChild(retry); game.running=false; }
-
-  // Pause + Music button
-  ui.pauseBtn.onclick=function(){ game.running=!game.running; ui.pauseBtn.textContent=game.running?'⏸︎ Пауза':'▶ Продолжить'; };
-  (function(){ var btn=document.createElement('span'); btn.className='btn'; btn.id='musicBtn'; btn.textContent='♫ Музыка: выкл'; ui.pauseBtn.parentElement.appendChild(btn); ui.musicBtn=btn; ui.musicBtn.onclick=toggleMusic; })();
-
-  // Music (simple chiptune)
-  // ======= Music (MP3 playback) =======
-let music = {
-  audio: null,
-  playing: false
-};
-
-function toggleMusic() {
-  if (!music.audio) {
-    // замените путь на свой mp3-файл
-    music.audio = new Audio("music/arcade_theme.mp3");
-    music.audio.loop = true;
-    music.audio.volume = 0.03;
-  }
-
-  if (!music.playing) {
-    music.audio.play();
-    music.playing = true;
-    ui.musicBtn.textContent = "♫ Музыка: вкл";
-  } else {
-    music.audio.pause();
-    music.playing = false;
-    ui.musicBtn.textContent = "♫ Музыка: выкл";
-  }
-}
-
-  // Kickoff
-  requestAnimationFrame(tick);
-})();
-</script>
+  <script src="js/game.js"></script>
 </body>
 </html>
