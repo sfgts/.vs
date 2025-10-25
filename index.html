@@ -8,9 +8,6 @@
 </head>
 <body>
   <div id="wrap">
-    <!-- FX overlay для всплывающих +XP -->
-    <div id="fx"></div>
-
     <!-- HUD -->
     <div class="hud">
       <div class="row">
@@ -27,8 +24,13 @@
       </div>
     </div>
 
-    <!-- Игровое поле -->
-    <canvas id="game" width="1240" height="920"></canvas>
+    <!-- Игровое поле (обёрнуто в .stage для виньетки по контуру) -->
+    <div class="stage">
+      <canvas id="game" width="1240" height="920"></canvas>
+    </div>
+
+    <!-- FX overlay для всплывающих +XP -->
+    <div id="fx"></div>
 
     <p class="muted">WASD — движение · Автоатака — каждые N сек · Поднимай синие кристаллы для EXP · Избегай врагов</p>
   </div><!-- /wrap -->
