@@ -1,6 +1,32 @@
 (function () {
   'use strict';
 
+  // ===== Автомасштабирование под экран =====
+  const GAME_W = 1264;  // canvas 1240 + padding
+  const GAME_H = 1010;  // canvas 920 + HUD + подсказка + padding
+
+  function scaleGame(){
+    const wrap = document.getElementById('wrap');
+    if(!wrap) return;
+    const scale = Math.min(
+      window.innerWidth  / GAME_W,
+      window.innerHeight / GAME_H,
+      1  // не апскейлить
+    );
+    const s = scale.toFixed(4);
+    // сдвигаем чтоб было по центру
+    const offsetX = (window.innerWidth  - GAME_W * scale) / 2;
+    const offsetY = (window.innerHeight - GAME_H * scale) / 2;
+    wrap.style.position  = 'fixed';
+    wrap.style.top       = '0';
+    wrap.style.left      = '0';
+    wrap.style.width     = GAME_W + 'px';
+    wrap.style.transform = `translate(${offsetX.toFixed(1)}px, ${Math.max(0,offsetY).toFixed(1)}px) scale(${s})`;
+  }
+  scaleGame();
+  window.addEventListener('resize', scaleGame);
+  // =========================================
+
   // ===== Supabase Leaderboard config
   // → Paste your values from Supabase Dashboard → Settings → API
   const SUPABASE_URL = 'https://wieewilxnegogbijfdwo.supabase.co';
@@ -64,9 +90,16 @@ const MENU_BG = 'img/menu/bg.gif'; // фон меню
     #startOverlay{
       position:fixed; inset:0; display:none; flex-direction:column;
       align-items:center; justify-content:center; gap:10px;
-      background: url('${MENU_BG}') center/cover no-repeat, #080414;
+      background: #080414;
       z-index:50; padding:16px; overflow-y:auto;
     }
+    #startOverlay::before{
+      content:''; position:absolute; inset:-40px; z-index:0;
+      background: url('${MENU_BG}') center/cover no-repeat;
+      filter: blur(7px) brightness(0.6);
+      pointer-events:none;
+    }
+    #startOverlay > * { position:relative; z-index:1; }
     .start-panel{
       display:flex; flex-direction:column; gap:12px;
       align-items:center; width:min(360px,90vw);

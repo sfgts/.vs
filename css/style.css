@@ -155,15 +155,20 @@
 
 /* ====== BASE ====== */
 html, body {
-  height: 100%;
-  margin: 0;
+  height: 100%; width: 100%;
+  margin: 0; padding: 0;
+  overflow: hidden;
   background: none;
   color: #e0c0ff;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
 /* Контейнер страницы */
-#wrap { display:flex; flex-direction:column; align-items:center; gap:8px; padding:12px; }
+#wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px;
+  transform-origin: top left;
+  /* transform и width выставляются JS-ом */
+}
 
 /* ====== Сцена и канвас ====== */
 .stage {
