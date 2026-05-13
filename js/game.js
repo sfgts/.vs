@@ -1601,12 +1601,24 @@ if (ui.xptext) ui.xptext.textContent = `${Math.floor(player.xp)} / ${player.xpNe
 
   // ===== Music (BG)
 
-    const music = {
-        menu: { audio: null, src: 'music/menu_theme.mp3',   playing: false },
-        game: { audio: null, src: 'music/arcade_theme.mp3', playing: false },
-        boss: { audio: null, src: 'music/boss_theme.mp3',   playing: false },
-        current: 'menu', // что считаем активным контекстом
-};
+  // Игровые треки — добавляй файлы в music/game/, прописывай сюда
+  const GAME_TRACKS = [
+    'music/game/track1.mp3',
+    'music/game/track2.mp3',
+    'music/game/track3.mp3',
+    'music/game/track4.mp3',
+    'music/game/track5.mp3',
+  ];
+
+  // Выбираем случайный трек один раз при загрузке страницы
+  const _randomGameTrack = GAME_TRACKS[(Math.random() * GAME_TRACKS.length) | 0];
+
+  const music = {
+    menu: { audio: null, src: 'music/menu_theme.mp3',  playing: false },
+    game: { audio: null, src: _randomGameTrack,         playing: false },
+    boss: { audio: null, src: 'music/boss_theme.mp3',  playing: false },
+    current: 'menu',
+  };
 
 function ensureTrack(name){
   const t = music[name];
@@ -1675,7 +1687,7 @@ window.addEventListener('keydown', () => {
   function playBossDeathSfx(){
     try{
       const a = new Audio(BOSS_DEATH_SFX);
-      a.volume = 0.80; a.play().catch(()=>{});
+      a.volume = 0.15; a.play().catch(()=>{});
     }catch(e){}
   }
 
