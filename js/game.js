@@ -378,6 +378,13 @@ window.addEventListener('keydown', (e) => {
     else closeBossIntro();
     return;
   }
+  // boss death диалог
+  if (game.bossDeathScene) {
+    e.preventDefault();
+    if (!bossDeathCtrl.finished) bossDeathCtrl.cancel && bossDeathCtrl.cancel();
+    else closeBossDeathScene();
+    return;
+  }
   // если окно истории видно — перехватываем
   if (ui.storyOverlay && ui.storyOverlay.style.display !== 'none') {
     e.preventDefault();
@@ -414,7 +421,8 @@ window.addEventListener('keydown', (e) => {
     bossProjs: [],
     bossWarning: false,
     bossWarnTimer: 0,
-    bossIntro: false
+    bossIntro: false,
+    bossDeathScene: false
   };
 
   // ─── Combat Log HTML Panel ────────────────────────────────────────────────
@@ -729,6 +737,7 @@ window.addEventListener('keydown', (e) => {
       x: bx, y: by, r: 38,
       hp: hpBase, hpMax: hpBase,
       shootTimer: 0,
+      voiceTimer: 3, // первый крик через 3 сек
       spreadAngle: 0,
       chaosTimer: 2.8,   // вторая атака с небольшой задержкой от первой
       crossTimer: 5.5,   // третья атака — крест
@@ -746,8 +755,12 @@ window.addEventListener('keydown', (e) => {
     const b = game.boss;
     if(!b) return;
 
-    // рандомные голосовые реплики (не чаще 10 сек, ~30% шанс в секунду)
-    if(Math.random() < dt * 0.3) playBossVoice();
+    // голосовые реплики: первая через 3 сек, потом каждые 7–9 сек
+    b.voiceTimer -= dt;
+    if(b.voiceTimer <= 0){
+      playBossVoice();
+      b.voiceTimer = 7 + Math.random() * 2; // следующий через 7–9 сек
+    }
 
     // движение к игроку (медленно)
     const dx = player.x - b.x, dy = player.y - b.y;
@@ -909,13 +922,16 @@ window.addEventListener('keydown', (e) => {
         if(p.pierced.size >= p.maxPierce) p.life=0;
       } else { p.life=0; }
       if(b.hp <= 0){
+        // дропаем кристаллы сразу
         for(let j=0;j<18;j++) dropGem(b.x+rand(-50,50), b.y+rand(-50,50));
         game.kills += 8; if(ui.kills) ui.kills.textContent=game.kills;
         game.boss=null; game.bossProjs=[];
         document.body.classList.remove('boss-fight');
         game.nextBossAt = game.seconds + 300;
         showXp('BOSS DEFEATED! 💀 +8 kills');
-        playTrack('game'); // возвращаем обычную музыку
+        playBossDeathSfx();
+        playTrack('game');
+        showBossDeathScene(); // диалог смерти — пауза до Space
         return;
       }
     }
@@ -1013,7 +1029,7 @@ window.addEventListener('keydown', (e) => {
     sfxSynth(player);
   }
 
-  function dropGem(x,y){ game.gems.push({x,y,r:5,xp:2}); }
+  function dropGem(x,y){ game.gems.push({x,y,r:5,xp:2,spawnedAt:game.seconds}); }
 
   function logCombat(type, amount, crit){
     game.combatLog.push({type, amount, crit:!!crit, t:now()});
@@ -1259,7 +1275,10 @@ window.addEventListener('keydown', (e) => {
       if (d2<player.magnetR*player.magnetR){ const d=Math.sqrt(d2)||1; g.x+=(player.x-g.x)/d*120*dt; g.y+=(player.y-g.y)/d*120*dt; }
     }
     for (let i=game.gems.length-1;i>=0;i--){
-      const g=game.gems[i]; const r=player.r+g.r;
+      const g=game.gems[i];
+      // удаление через 30 сек
+      if(game.seconds - g.spawnedAt >= 30){ game.gems.splice(i,1); continue; }
+      const r=player.r+g.r;
       if (dist2(player.x,player.y,g.x,g.y)<=r*r){
         const gained = Math.ceil((g.xp + player.xpBonus) * player.xpMult);
         player.xp += gained; showXp('+ '+gained+' XP');
@@ -1311,7 +1330,14 @@ if (ui.xptext) ui.xptext.textContent = `${Math.floor(player.xp)} / ${player.xpNe
     for (const c of game.chests) drawChest(c.x,c.y);
 
     // gems
-    for (const g of game.gems){ drawCircle(g.x,g.y,g.r,'#cc44ff'); drawRing(g.x,g.y,g.r+2,'#8800cc'); }
+    for (const g of game.gems){
+      const age = game.seconds - g.spawnedAt;
+      if(age >= 25){
+        // мигание: 4 раза в секунду, пропускаем каждый второй кадр
+        if(Math.floor(now() / 125) % 2 === 0) continue;
+      }
+      drawCircle(g.x,g.y,g.r,'#cc44ff'); drawRing(g.x,g.y,g.r+2,'#8800cc');
+    }
 
     // enemies
     for (const e of game.enemies){
@@ -1644,6 +1670,109 @@ window.addEventListener('keydown', () => {
     typing:  'music/typing.wav'
   };
 
+  // ===== Boss death sound
+  const BOSS_DEATH_SFX = 'music/boss/death.wav';
+  function playBossDeathSfx(){
+    try{
+      const a = new Audio(BOSS_DEATH_SFX);
+      a.volume = 0.80; a.play().catch(()=>{});
+    }catch(e){}
+  }
+
+  // ===== Boss death dialogue ================================================
+  let _bossDeathEl = null;
+  const bossDeathCtrl = { active:false, finished:false, cancel:null };
+
+  const BOSS_DEATH_LINES = 'N-no... this cannot be...\n\nI am the void itself.\nI will return... and when I do,\nyou won\'t be so lucky.';
+
+  function ensureBossDeathEl(){
+    if(_bossDeathEl) return;
+    _bossDeathEl = document.createElement('div');
+    _bossDeathEl.id = 'boss-death-overlay';
+    _bossDeathEl.style.cssText = [
+      'position:fixed','inset:0','display:none','place-items:center',
+      'z-index:45','backdrop-filter:blur(5px)',
+      'background:rgba(6,3,14,0.82)',
+      'font-family:monospace','cursor:pointer'
+    ].join(';');
+    _bossDeathEl.innerHTML =
+      '<div id="bossDeathCard" style="background:#0f0a1e;border:2px solid #5a1a6a;border-radius:10px;'
+      +'padding:20px;width:min(480px,90vw);box-shadow:0 0 40px #8800cc55;opacity:0;transition:opacity .5s">'
+      +'<div style="display:flex;gap:14px;align-items:flex-start">'
+      +'<div style="width:80px;height:80px;flex:0 0 auto;border:2px solid #5a1a6a;border-radius:6px;'
+      +'background:#0a0518;display:grid;place-items:center;overflow:hidden;image-rendering:pixelated;'
+      +'filter:grayscale(0.7) brightness(0.6)">'
+      +'<img src="img/boss/portrait.gif" style="max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated" alt="boss">'
+      +'</div>'
+      +'<div id="bossDeathText" style="color:#c090c0;line-height:1.6;white-space:pre-wrap;min-height:4em;font-size:.95em"></div>'
+      +'</div>'
+      +'<div id="bossDeathHint" style="display:none;margin-top:14px;color:#6040a0;font-size:.85em">'
+      +'<span style="display:inline-block;padding:3px 10px;border:1px solid #3d1a55;border-radius:4px;'
+      +'background:#0a0518;margin-right:6px">Space</span> — continue</div>'
+      +'</div>';
+    document.body.appendChild(_bossDeathEl);
+    _bossDeathEl.addEventListener('click', ()=>{
+      if(!bossDeathCtrl.finished) bossDeathCtrl.cancel && bossDeathCtrl.cancel();
+      else closeBossDeathScene();
+    });
+  }
+
+  function showBossDeathScene(){
+    ensureBossDeathEl();
+    game.bossDeathScene = true;
+    game.running = false;
+    _bossDeathEl.style.display = 'grid';
+
+    // музыка тише во время диалога
+    const tr = music[music.current];
+    if(tr && tr.audio) tr.audio.volume = VOLUME.music * 0.25;
+
+    setTimeout(()=>{
+      const card = document.getElementById('bossDeathCard');
+      if(card) card.style.opacity = '1';
+      const textEl = document.getElementById('bossDeathText');
+      if(!textEl) return;
+
+      bossDeathCtrl.active   = true;
+      bossDeathCtrl.finished = false;
+      textEl.textContent = '';
+      let i = 0;
+      const text = BOSS_DEATH_LINES;
+      let timer = null;
+
+      function finishType(){
+        bossDeathCtrl.active   = false;
+        bossDeathCtrl.finished = true;
+        timer = null;
+        const hint = document.getElementById('bossDeathHint');
+        if(hint) hint.style.display = 'block';
+      }
+      function tick(){
+        textEl.textContent = text.slice(0, ++i);
+        const ch = text[i-1];
+        if(i % 2===0 && ch && ch.trim()) sfxPlay('typing', VOLUME.typing * 0.4);
+        if(i < text.length) timer = setTimeout(tick, 28);
+        else finishType();
+      }
+      timer = setTimeout(tick, 28);
+
+      bossDeathCtrl.cancel = ()=>{
+        if(timer){ clearTimeout(timer); timer = null; }
+        textEl.textContent = text;
+        finishType();
+      };
+    }, 600);
+  }
+
+  function closeBossDeathScene(){
+    if(_bossDeathEl) _bossDeathEl.style.display = 'none';
+    game.bossDeathScene = false;
+    game.running = true;
+    const tr = music[music.current];
+    if(tr && tr.audio) tr.audio.volume = VOLUME.music;
+  }
+  // ===== END Boss death dialogue ============================================
+
   // ===== Boss voice lines (рандомные, не чаще 10 сек)
   const BOSS_VOICES = [
     'music/boss/voice1.wav',
@@ -1656,13 +1785,10 @@ window.addEventListener('keydown', () => {
   let _lastBossVoiceAt = -999;
 
   function playBossVoice(){
-    const now_ = game.seconds;
-    if(now_ - _lastBossVoiceAt < 10) return;
-    _lastBossVoiceAt = now_;
     const src = BOSS_VOICES[(Math.random() * BOSS_VOICES.length) | 0];
     try{
       const a = (bossVoiceCache[src] && bossVoiceCache[src].pop()) || new Audio(src);
-      a.volume = 0.70; a.currentTime = 0;
+      a.volume = 0.30; a.currentTime = 0;
       a.onended = ()=>{ (bossVoiceCache[src]||(bossVoiceCache[src]=[])).push(a); };
       a.play().catch(()=>{});
     }catch(e){}
@@ -1819,6 +1945,8 @@ window.addEventListener('keydown', () => {
     sfxPlay('death', 0.4);
     document.body.classList.remove('low-hp');
     document.body.classList.remove('boss-fight');
+    if(_bossDeathEl) _bossDeathEl.style.display='none';
+    game.bossDeathScene = false;
     setOverlayTitle('GAME OVER');
     ui.levelup.style.display='grid';
     game.running=false;
@@ -1906,8 +2034,8 @@ function typeText(el, text, cps, done){
   };
 }
 
-  const STORY = 'Ты — “спящий аватар”, застрявший в глитч-мире между сервером и подсознанием.\n' +
-                'Каждая сессия — это цикл сна, где нужно выжить среди багов, вирусов и обрывков воспоминаний.';
+  const STORY = 'You are a “sleeping avatar” trapped in a glitch world between the server and the subconscious.\n' +
+                'Each session is a sleep cycle where you must survive among bugs, viruses, and fragments of memories.';
 
 function showStory(){
   ui.storyOverlay.style.display = 'grid';
