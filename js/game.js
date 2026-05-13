@@ -2115,5 +2115,44 @@ function startFromMenu(){
   if(ui.storyOverlay) ui.storyOverlay.addEventListener("click",(e)=>{
     if(ui.storyOk && ui.storyOk.style.display!=="none" && e.target===ui.storyOverlay) startRun();
   });
-  window.addEventListener("load",()=>{ showMenu(); });
+  window.addEventListener("load",()=>{
+    // ===== Декоративный загрузчик =====
+    const loadScreen = document.getElementById('loadScreen');
+    const loadBar    = document.getElementById('loadBar');
+    const loadMsg    = document.getElementById('loadMsg');
+    const msgs = [
+      'Initializing glitch matrix…',
+      'Loading corrupted memories…',
+      'Syncing with the void…',
+      'Patching reality…',
+      'Spawning entities…',
+      'Calibrating dreamscape…',
+      'Almost there…',
+    ];
+    let step = 0;
+    const totalSteps = msgs.length;
+
+    function nextStep(){
+      if(step >= totalSteps){
+        // сначала показываем меню за лоадингом, потом плавно убираем лоадинг
+        const wrap = document.getElementById('wrap');
+        showMenu();
+        if(wrap) requestAnimationFrame(()=>{ wrap.style.opacity='1'; });
+        // startOverlay появляется с fade-in
+        const so = document.getElementById('startOverlay');
+        if(so){ so.style.opacity='0'; so.style.transition='opacity .5s ease';
+          requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ so.style.opacity='1'; }); }); }
+        setTimeout(()=>{
+          if(loadScreen) loadScreen.classList.add('hide');
+          setTimeout(()=>{ if(loadScreen) loadScreen.style.display='none'; }, 520);
+        }, 80);
+        return;
+      }
+      if(loadBar) loadBar.style.width = ((step+1)/totalSteps*100).toFixed(1)+'%';
+      if(loadMsg)  loadMsg.textContent = msgs[step];
+      step++;
+      setTimeout(nextStep, 320 + Math.random()*200);
+    }
+    setTimeout(nextStep, 120);
+  });
 })();

@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div id="wrap">
+  <div id="wrap" style="opacity:0;transition:opacity .4s ease;">
     <!-- HUD -->
     <div class="hud">
       <div class="row">
@@ -64,6 +64,17 @@
       <h3>Level Up!</h3>
       <p class="muted">Choose an upgrade:</p>
       <div class="opts" id="opts"></div>
+    </div>
+  </div>
+
+  <!-- LOADING SCREEN — прячется JS-ом после загрузки -->
+  <div id="loadScreen">
+    <div id="loadBg"></div>
+    <div id="loadBox">
+      <div id="loadTitle" data-text="VS">VS</div>
+      <div id="loadSub">Digital Dreamscape</div>
+      <div id="loadBarWrap"><div id="loadBar"></div></div>
+      <div id="loadMsg">Initializing…</div>
     </div>
   </div>
 
