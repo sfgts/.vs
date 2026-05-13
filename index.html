@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -19,28 +19,28 @@
         <div class="bar hp" style="width:180px"><i id="hpbar"></i></div>
         <span class="pill">Kills: <span id="kills">0</span></span>
         <span class="pill">Time: <span id="time">00:00</span></span>
-        <span class="btn" id="pauseBtn">⏸︎ Пауза</span>
-        <span class="btn" id="musicBtn">♫ Музыка: выкл</span>
+        <span class="btn" id="pauseBtn">⏸︎ Pause</span>
+        <span class="btn" id="musicBtn">♫ Music: off</span>
       </div>
     </div>
 
-    <!-- Игровое поле (обёрнуто в .stage для виньетки по контуру) -->
+    <!-- Game canvas wrapped in .stage for vignette -->
     <div class="stage">
       <canvas id="game" width="1240" height="920"></canvas>
     </div>
 
-    <!-- FX overlay для всплывающих +XP -->
+    <!-- FX overlay for floating +XP popups -->
     <div id="fx"></div>
 
-    <p class="muted">WASD — движение · Автоатака — каждые N сек · Поднимай синие кристаллы для EXP · Избегай врагов</p>
+    <p class="muted">WASD — move · Auto-attack every few sec · Collect blue crystals for EXP · Avoid enemies</p>
   </div><!-- /wrap -->
 
-  <!-- START overlay -->
+  <!-- START overlay (rebuilt by JS buildStartMenu) -->
   <div class="overlay pixel" id="startOverlay">
     <div class="card-px">
       <h3 class="hdr-px">VSurvivors — Digital Dreamscape</h3>
-      <p class="mini-hint">WASD — движение · Авто-бой · Подбери кристаллы для EXP</p>
-      <div class="btn-px" id="startBtn">▶ СТАРТ</div>
+      <p class="mini-hint">WASD — move · Auto-attack · Collect crystals for EXP</p>
+      <div class="btn-px" id="startBtn">▶ START</div>
     </div>
   </div>
 
@@ -53,16 +53,16 @@
         </div>
         <div class="txt-px" id="storyText"></div>
       </div>
-      <div class="btn-px" id="storyOk" style="display:none">Продолжить</div>
-      <div class="mini-hint" id="storyHint" style="display:none">Нажми, чтобы продолжить…</div>
+      <div class="btn-px" id="storyOk" style="display:none">Continue</div>
+      <div class="mini-hint" id="storyHint" style="display:none">Click to continue…</div>
     </div>
   </div>
 
   <!-- Level Up overlay -->
   <div class="levelup" id="levelup" style="display:none">
     <div class="card">
-      <h3>Повышение уровня!</h3>
-      <p class="muted">Выберите апгрейд:</p>
+      <h3>Level Up!</h3>
+      <p class="muted">Choose an upgrade:</p>
       <div class="opts" id="opts"></div>
     </div>
   </div>

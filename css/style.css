@@ -2,8 +2,8 @@
 html, body {
   height: 100%;
   margin: 0;
-  background: none;             /* фон задаём через ::before */
-  color: #e7e7ea;
+  background: none;
+  color: #e0c0ff;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
@@ -11,51 +11,97 @@ html, body {
 #wrap { display:flex; flex-direction:column; align-items:center; gap:8px; padding:12px; }
 
 /* ====== Сцена и канвас ====== */
-/* ВАЖНО: canvas оборачиваем в .stage (см. HTML ниже) */
 .stage {
   position: relative;
   display: inline-block;
-  border-radius: 12px;           /* совпадает с canvas */
+  border-radius: 12px;
 }
 
-/* аккуратный борт у самого канваса */
 canvas {
-  background:#111418;
-  border:1px solid #1f2733;
+  background:#0a0614;
+  border:1px solid #3d1a55;
   border-radius:12px;
   image-rendering: pixelated;
   display:block;
 }
 
-/* ====== HUD / UI как было ранее ====== */
+/* ====== HUD ====== */
 .hud { width: min(1240px, 98vw); display:flex; justify-content:space-between; align-items:center; gap:8px; }
 .hud .row { display:flex; align-items:center; gap:12px; }
-.bar { flex:1; height:12px; background:#1a2230; border-radius:8px; overflow:hidden; border:1px solid #263044; }
-.bar>i { display:block; height:100%; background:#3aa0ff; width:0%; transition:width 120ms linear; }
+.bar { flex:1; height:12px; background:#120820; border-radius:8px; overflow:hidden; border:1px solid #3d1a55; }
+.bar>i { display:block; height:100%; background:#9944ff; width:0%; transition:width 120ms linear; }
 .bar.hp>i { background:#ff4d6d; }
-.pill { padding:4px 8px; background:#1a2230; border:1px solid #263044; border-radius:999px; font-variant-numeric: tabular-nums; }
-.btn { padding:6px 10px; background:#1a2230; border:1px solid #2a3650; border-radius:8px; cursor:pointer; user-select:none; }
-.btn:hover { background:#212a3a; }
+.pill { padding:4px 8px; background:#0f0a1e; border:1px solid #3d1a55; border-radius:999px; font-variant-numeric: tabular-nums; color:#e0c0ff; }
+.btn { padding:6px 10px; background:#0f0a1e; border:1px solid #4a1a6a; border-radius:8px; cursor:pointer; user-select:none; color:#e0c0ff; }
+.btn:hover { background:#1e0d35; }
 
-/* Levelup modal */
-.levelup { position:fixed; inset:0; display:none; place-items:center; backdrop-filter: blur(2px); z-index:40; }
-.card { background:#121620; border:1px solid #2a3650; border-radius:16px; padding:16px; width:min(420px, 92vw); }
+/* ====== Level Up modal ====== */
+.levelup {
+  position:fixed; inset:0; display:none; place-items:center;
+  backdrop-filter: blur(5px);
+  background: rgba(5,2,12,0.72);
+  z-index:40;
+}
+.card {
+  background:#0f0a1e;
+  border:2px solid #5a1a6a;
+  border-radius:16px;
+  padding:20px;
+  width:min(440px, 92vw);
+  box-shadow: 0 0 40px #8800cc44, inset 0 0 0 1px #2a0a3a;
+}
+.card h3 { margin:0 0 4px 0; color:#e0c0ff; font-size:1.2em; letter-spacing:.5px; }
 .opts { display:grid; gap:8px; margin-top:12px; }
-.opt { padding:10px; border:1px solid #33425f; border-radius:12px; cursor:pointer; background:#161b28; }
-.opt:hover { background:#1b2132; }
-.muted { opacity:.8; font-size:.9em; }
+.opt {
+  padding:10px 14px;
+  border:1px solid #4a1a6a;
+  border-radius:12px;
+  cursor:pointer;
+  background:#150d28;
+  color:#e0c0ff;
+  transition: background .12s, border-color .12s, box-shadow .12s;
+}
+.opt:hover {
+  background:#1e1035;
+  border-color:#7a2a9a;
+  box-shadow: 0 0 12px #8800cc33;
+}
+.muted { opacity:.75; font-size:.9em; color:#9060c0; }
 
 /* ====== Pixel UI / START & STORY overlays ====== */
 .pixel { font-family: monospace; letter-spacing: 1px; image-rendering: pixelated; -webkit-font-smoothing: none; -moz-osx-font-smoothing: grayscale; }
-.overlay { position: fixed; inset: 0; display: grid; place-items: center; background: linear-gradient(#0b0e13aa,#0b0e13aa); z-index: 50; }
-.card-px { background:#0f1420; border:3px solid #2c3650; border-radius:8px; padding:16px; width:min(560px, 94vw); box-shadow:0 0 0 4px #0b0e13; }
-.hdr-px { font-weight:700; margin:0 0 8px 0; }
-.txt-px { color:#bcd1ff; line-height:1.5; white-space:pre-wrap; min-height:4em; }
-.btn-px { display:inline-block; margin-top:12px; padding:8px 12px; background:#162036; border:2px solid #2f3e63; border-radius:6px; cursor:pointer; user-select:none; }
-.btn-px:hover { background:#1a2644; }
-.mini-hint { color:#8aa1d8; font-size:.85em; opacity:.9; }
-.story-wrap { display:flex; gap:12px; align-items:flex-start; }
-.portrait { width:80px; height:80px; flex:0 0 auto; border:2px solid #2c3650; border-radius:6px; background:#0b0f18; display:grid; place-items:center; overflow:hidden; image-rendering: pixelated; }
+.overlay {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  background: rgba(5,2,12,0.80);
+  backdrop-filter: blur(5px);
+  z-index: 50;
+}
+.card-px {
+  background:#0f0a1e;
+  border:2px solid #5a1a6a;
+  border-radius:10px;
+  padding:20px;
+  width:min(560px, 94vw);
+  box-shadow: 0 0 40px #8800cc44, inset 0 0 0 1px #2a0a3a;
+}
+.hdr-px { font-weight:700; margin:0 0 10px 0; color:#e0c0ff; letter-spacing:.5px; }
+.txt-px { color:#c8a0f0; line-height:1.6; white-space:pre-wrap; min-height:4em; }
+.btn-px {
+  display:inline-block; margin-top:12px; padding:9px 16px;
+  background:#1a0a2e; border:2px solid #5a1a6a; border-radius:7px;
+  cursor:pointer; user-select:none; color:#e0c0ff; font-weight:600;
+  transition: background .12s, box-shadow .12s;
+}
+.btn-px:hover { background:#220d3e; box-shadow: 0 0 14px #8800cc55; }
+.mini-hint { color:#7050a0; font-size:.85em; opacity:.9; }
+.story-wrap { display:flex; gap:14px; align-items:flex-start; }
+.portrait {
+  width:80px; height:80px; flex:0 0 auto;
+  border:2px solid #5a1a6a; border-radius:6px;
+  background:#0a0518; display:grid; place-items:center;
+  overflow:hidden; image-rendering: pixelated;
+  box-shadow: 0 0 16px #8800cc33;
+}
 .portrait > img { max-width:100%; max-height:100%; object-fit:contain; image-rendering: pixelated; }
 @media (max-width:520px){ .portrait{ width:64px; height:64px; } }
 
@@ -64,7 +110,7 @@ canvas {
 .xppop { position: fixed; font-weight: 700; text-shadow: 0 1px 0 #0007; opacity: 0; transform: translate(-50%, 8px) scale(0.98); transition: transform .8s ease-out, opacity .8s ease-out; }
 .xppop.show { opacity: 1; transform: translate(-50%, -18px) scale(1); }
 
-/* ====== ГЛИТЧ-ФОН (за всей страницей) ====== */
+/* ====== ГЛИТЧ-ФОН ====== */
 body::before {
   content: "";
   position: fixed;
@@ -73,9 +119,9 @@ body::before {
   pointer-events: none;
 
   background:
-    linear-gradient(177deg, #0a0b11 0%, #0c0f18 100%),
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 4px),
-    repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+    linear-gradient(177deg, #080412 0%, #0b0618 100%),
+    repeating-linear-gradient(90deg, rgba(180,80,255,0.018) 0px, rgba(180,80,255,0.018) 2px, transparent 2px, transparent 4px),
+    repeating-linear-gradient(0deg, rgba(180,80,255,0.013) 0px, rgba(180,80,255,0.013) 1px, transparent 1px, transparent 3px);
   background-blend-mode: overlay;
 
   animation: glitchShift 6s steps(4) infinite, glitchNoise 1.6s linear infinite;
@@ -85,43 +131,52 @@ body::before {
 
 @keyframes glitchShift {
   0%, 100% { background-position: 0 0, 0 0, 0 0; }
-  25% { background-position: 2px 1px, 2px 0, -1px 2px; }
-  50% { background-position: -2px -1px, -1px 2px, 1px -2px; }
-  75% { background-position: 1px -2px, -2px -1px, 0 1px; }
+  25%  { background-position: 2px 1px, 2px 0, -1px 2px; }
+  50%  { background-position: -2px -1px, -1px 2px, 1px -2px; }
+  75%  { background-position: 1px -2px, -2px -1px, 0 1px; }
 }
 @keyframes glitchNoise {
   0%, 100% { opacity: 0.95; filter: brightness(1.1) contrast(1.1); }
-  50% { opacity: 1; filter: brightness(1.2) contrast(1.25); }
+  50%       { opacity: 1;    filter: brightness(1.2) contrast(1.25); }
 }
 
-/* ====== НИЗКИЙ HP: мягкая КРАСНАЯ ВИНЬЕТКА-КОНТУР вокруг канваса ======
-   Важно: это кольцо ВНЕ канваса, не закрашивает его. */
+/* ====== НИЗКИЙ HP: красная виньетка ====== */
 .stage::after {
   content: "";
   position: absolute;
-  inset: 0;                     /* по периметру канваса */
+  inset: 0;
   border-radius: 12px;
   pointer-events: none;
   z-index: 2;
-
-  /* «контур»: несколько наружных теней — они не заходят внутрь */
   box-shadow:
-    0 0 0 3px rgba(255, 0, 0, 0.22),      /* тонкий красный ободок */
-    0 0 14px 6px rgba(255, 0, 0, 0.14),   /* мягкое свечение ближе */
-    0 0 36px 12px rgba(255, 0, 0, 0.10);  /* дальнее рассеяние */
-
-  opacity: 0;                    /* по умолчанию скрыта */
+    0 0 0 3px rgba(255, 0, 0, 0.22),
+    0 0 14px 6px rgba(255, 0, 0, 0.14),
+    0 0 36px 12px rgba(255, 0, 0, 0.10);
+  opacity: 0;
   transition: opacity .35s ease;
 }
-
-/* активируется добавлением .low-hp на body (как и раньше) */
 body.low-hp .stage::after {
-  opacity: .6;                   /* менее ярко */
+  opacity: .6;
   animation: ringBreath 1.8s ease-in-out infinite;
 }
-
 @keyframes ringBreath {
   0%   { opacity: .45; filter: brightness(1) contrast(1); }
   50%  { opacity: .75; filter: brightness(1.1) contrast(1.1); }
   100% { opacity: .45; filter: brightness(1) contrast(1); }
+}
+
+/* ====== BOSS FIGHT: красное мигание фона ====== */
+body.boss-fight::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(180,0,0,0.18) 0%, rgba(120,0,0,0.32) 60%, rgba(60,0,0,0.45) 100%);
+  animation: bossBgPulse 1.4s ease-in-out infinite;
+}
+@keyframes bossBgPulse {
+  0%   { opacity: 0.4; }
+  50%  { opacity: 1.0; }
+  100% { opacity: 0.4; }
 }
